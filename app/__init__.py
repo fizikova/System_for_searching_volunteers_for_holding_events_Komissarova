@@ -2,6 +2,7 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_login import LoginManager
+from app.models import User
 import os
 
 # Инициализация расширений
@@ -9,6 +10,10 @@ db = SQLAlchemy()
 migrate = Migrate()
 login = LoginManager()
 login.login_view = 'auth.login'
+
+@login.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
 
 def create_app():
 
