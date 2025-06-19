@@ -22,7 +22,7 @@ def create_app():
     #    app.config.from_pyfile(r'C:\vyz\Volunteering\config.py')
     # 2) На PythonAnywhere (config.py в корне проекта):
     #    app.config.from_pyfile('config.py')
-    app.config.from_pyfile(r'C:\vyz\Volunteering\config.py')   # <-- УКАЖИТЕ ЗДЕСЬ СВОЙ ПУТЬ К config.py
+    app.config.from_pyfile('config.py')   # <-- УКАЖИТЕ ЗДЕСЬ СВОЙ ПУТЬ К config.py
 
     # Инициализация расширений
     db.init_app(app)
