@@ -1,0 +1,18 @@
+# Виртуальное окружение
+venv/
+# Системные файлы Python и временные
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Конфиг с секретными данными
+config.py
+
+# Базы SQLite, если вдруг
+*.db
+*.sqlite3
+
+# Логи, IDE файлы
+*.log
+.vscode/
+.idea/
