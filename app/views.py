@@ -40,11 +40,23 @@ def create_event():
 
     form = EventForm()
     if form.validate_on_submit():
-        filename = secure_filename(form.image.data.filename)
-        upload_path = os.path.join(current_app.static_folder, 'uploads', filename)
-        form.image.data.save(upload_path)
-        desc_html = bleach.clean(form.description.data, tags=ALLOWED_TAGS, strip=True)
+        # 1) Убедимся, что папка uploads существует
+        upload_folder = os.path.join(current_app.root_path, 'static', 'uploads')
+        os.makedirs(upload_folder, exist_ok=True)
 
+        # 2) Сохраняем файл
+        filename = secure_filename(form.image.data.filename)
+        filepath = os.path.join(upload_folder, filename)
+        form.image.data.save(filepath)
+
+        # 3) Санитизируем описание
+        desc_html = bleach.clean(
+            form.description.data,
+            tags=ALLOWED_TAGS,
+            strip=True
+        )
+
+        # 4) Создаём запись в БД
         ev = Event(
             name=form.name.data,
             description=desc_html,

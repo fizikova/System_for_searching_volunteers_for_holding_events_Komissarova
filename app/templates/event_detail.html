@@ -6,13 +6,19 @@
     <p><strong>Дата:</strong> {{ event.date }}</p>
     <p><strong>Место:</strong> {{ event.place }}</p>
     <p><strong>Организатор:</strong> {{ event.organizer.last_name }} {{ event.organizer.first_name }}</p>
-    <img src="/{{ url_for('static', filename='uploads/' + event.image_filename) }}" alt="{{ event.name }}" class="img-fluid mb-3">
+    <img
+      src="{{ url_for('static', filename='uploads/' + event.image_filename) }}"
+      alt="{{ event.name }}"
+      class="img-fluid mb-3">
     <div>{{ event.description|safe }}</div>
 
     <h3>Зарегистрированные волонтёры</h3>
     <ul>
       {% for reg in event.registrations if reg.status == 'accepted' %}
-        <li>{{ reg.volunteer.last_name }} {{ reg.volunteer.first_name }} — {{ reg.contact_info }} ({{ reg.registered_at }})</li>
+        <li>
+          {{ reg.volunteer.last_name }} {{ reg.volunteer.first_name }}
+          — {{ reg.contact_info }} ({{ reg.registered_at.strftime('%Y-%m-%d %H:%M') }})
+        </li>
       {% else %}
         <li>Нет подтверждённых регистраций.</li>
       {% endfor %}
@@ -33,9 +39,16 @@
       </ul>
     {% endif %}
 
-    {% if current_user.is_authenticated and current_user.role.name == 'user' and not event.registrations|selectattr('volunteer_id','equalto',current_user.id)|list %}
-      <a href="{{ url_for('main.register', event_id=event.id) }}" class="btn btn-primary">Зарегистрироваться</a>
+    {% if current_user.is_authenticated
+          and current_user.role.name == 'user'
+          and not event.registrations|selectattr('volunteer_id','equalto',current_user.id)|list %}
+      <form action="{{ url_for('main.register', event_id=event.id) }}" method="post" class="mt-3">
+        <div class="mb-3">
+          <label for="contact_info" class="form-label">Контактная информация</label>
+          <input type="text" name="contact_info" id="contact_info" class="form-control" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Зарегистрироваться</button>
+      </form>
     {% endif %}
   </div>
 {% endblock %}
-
