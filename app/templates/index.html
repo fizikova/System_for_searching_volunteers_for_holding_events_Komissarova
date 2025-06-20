@@ -1,6 +1,9 @@
 {% extends "base.html" %}
 
 {% block content %}
+
+<p><strong>DEBUG: ваша роль — {{ current_user.role.name if current_user.is_authenticated else 'неавторизован' }}</strong></p>
+
 <div class="container mt-4">
   <h1 class="mb-3">Список мероприятий</h1>
 
