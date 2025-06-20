@@ -2,6 +2,7 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, IntegerField, DateField, TextAreaField, FileField, SubmitField
 from wtforms.validators import DataRequired, NumberRange
 from flask_wtf.file import FileAllowed, FileRequired
+from wtforms import PasswordField, BooleanField
 
 class LoginForm(FlaskForm):
     login = StringField('Логин', validators=[DataRequired()])
