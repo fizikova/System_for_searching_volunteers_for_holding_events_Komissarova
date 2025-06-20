@@ -9,8 +9,9 @@ from app.models import Event, User, Registration, Role
 from app.forms import LoginForm, EventForm
 from werkzeug.security import check_password_hash
 
-# Разрешённые теги для Markdown
-ALLOWED_TAGS = bleach.sanitizer.ALLOWED_TAGS + ['p', 'pre', 'h1', 'h2', 'h3', 'ul', 'ol', 'li', 'strong', 'em', 'a']
+ALLOWED_TAGS = bleach.sanitizer.ALLOWED_TAGS.union(
+    {'p', 'pre', 'h1', 'h2', 'h3', 'ul', 'ol', 'li', 'strong', 'em', 'a'}
+)
 
 main_bp = Blueprint('main', __name__)
 
