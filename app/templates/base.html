@@ -18,14 +18,19 @@
   </nav>
 
   <div class="container">
-    {% with messages = get_flashed_messages() %}
-      {% for msg in messages %}
-        <div class="flash">{{ msg }}</div>
-      {% endfor %}
-    {% endwith %}
 
-    {% block content %}{% endblock %}
-  </div>
+  {% with messages = get_flashed_messages() %}
+    {% if messages %}
+      {% for msg in messages %}
+        <div class="alert alert-warning" role="alert">
+          {{ msg }}
+        </div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  {% block content %}{% endblock %}
+</div>
 
   <footer>Комиссарова Алена Сергеевна 231-3213</footer>
 </body>
