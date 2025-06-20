@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% import "_macros.html" as macros %}
+
+{% block content %}
+  <div class="container">
+    <h1>{{ 'Редактировать' if event else 'Создать' }} мероприятие</h1>
+    <form method="post" enctype="multipart/form-data">
+      {{ form.hidden_tag() }}
+      {{ macros.render_field(form.name) }}
+      {{ macros.render_field(form.description) }}
+      {{ macros.render_field(form.date) }}
+      {{ macros.render_field(form.place) }}
+      {{ macros.render_field(form.volunteers_required) }}
+      {% if not event %}
+        {{ macros.render_field(form.image) }}
+      {% endif %}
+      <button type="submit" class="btn btn-success">Сохранить</button>
+      <a href="{{ url_for('main.index') }}" class="btn btn-secondary">Отмена</a>
+    </form>
+  </div>
+{% endblock %}

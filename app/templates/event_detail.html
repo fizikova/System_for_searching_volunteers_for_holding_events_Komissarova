@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <div class="container">
+    <h1>{{ event.name }}</h1>
+    <p><strong>Дата:</strong> {{ event.date }}</p>
+    <p><strong>Место:</strong> {{ event.place }}</p>
+    <p><strong>Организатор:</strong> {{ event.organizer.last_name }} {{ event.organizer.first_name }}</p>
+    <img src="/{{ url_for('static', filename='uploads/' + event.image_filename) }}" alt="{{ event.name }}" class="img-fluid mb-3">
+    <div>{{ event.description|safe }}</div>
+
+    <h3>Зарегистрированные волонтёры</h3>
+    <ul>
+      {% for reg in event.registrations if reg.status == 'accepted' %}
+        <li>{{ reg.volunteer.last_name }} {{ reg.volunteer.first_name }} — {{ reg.contact_info }} ({{ reg.registered_at }})</li>
+      {% else %}
+        <li>Нет подтверждённых регистраций.</li>
+      {% endfor %}
+    </ul>
+
+    {% if current_user.is_authenticated and current_user.role.name == 'moderator' %}
+      <h3>Ожидающие заявки</h3>
+      <ul>
+        {% for reg in event.registrations if reg.status == 'pending' %}
+          <li>
+            {{ reg.volunteer.last_name }} {{ reg.volunteer.first_name }} — {{ reg.contact_info }}
+            <a href="{{ url_for('main.accept_registration', reg_id=reg.id) }}">Принять</a>
+            <a href="{{ url_for('main.reject_registration', reg_id=reg.id) }}">Отклонить</a>
+          </li>
+        {% else %}
+          <li>Нет заявок на рассмотрение.</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+
+    {% if current_user.is_authenticated and current_user.role.name == 'user' and not event.registrations|selectattr('volunteer_id','equalto',current_user.id)|list %}
+      <a href="{{ url_for('main.register', event_id=event.id) }}" class="btn btn-primary">Зарегистрироваться</a>
+    {% endif %}
+  </div>
+{% endblock %}
+
