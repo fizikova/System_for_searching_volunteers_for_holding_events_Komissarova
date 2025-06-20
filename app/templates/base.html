@@ -33,5 +33,15 @@
 </div>
 
   <footer>Комиссарова Алена Сергеевна 231-3213</footer>
+
+  <script>
+  window.addEventListener('pageshow', function(event) {
+    if (event.persisted) {
+      // если страница загружена из BFCache
+      window.location.reload();
+    }
+  });
+</script>
+
 </body>
 </html>
