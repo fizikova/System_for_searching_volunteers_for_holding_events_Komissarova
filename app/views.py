@@ -67,7 +67,6 @@ def edit_event(event_id):
         flash('У вас недостаточно прав для редактирования')
         return redirect(url_for('main.index'))
 
-    # создаём форму без поля image
     class EditForm(EventForm):
         image = None
 
@@ -82,6 +81,17 @@ def edit_event(event_id):
         return redirect(url_for('main.event_detail', event_id=ev.id))
 
     return render_template('event_form.html', form=form, event=ev)
+
+@main_bp.route('/event/<int:event_id>/delete', methods=['POST', 'GET'])
+@login_required
+def delete_event(event_id):
+    ev = Event.query.get_or_404(event_id)
+    if current_user.role.name != 'admin':
+        abort(403)
+    db.session.delete(ev)
+    db.session.commit()
+    flash('Мероприятие удалено')
+    return redirect(url_for('main.index'))
 
 @main_bp.route('/event/<int:event_id>')
 def event_detail(event_id):
