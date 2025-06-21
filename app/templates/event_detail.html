@@ -1,59 +1,163 @@
 {% extends "base.html" %}
 
 {% block content %}
-
-  <div class="container mt-4">
-    <h1>{{ event.name }}</h1>
-    <p><strong>Дата:</strong> {{ event.date.strftime('%Y-%m-%d') }}</p>
-    <p><strong>Место:</strong> {{ event.place }}</p>
-    <p><strong>Организатор:</strong>
-      {{ event.organizer.last_name }} {{ event.organizer.first_name }}{% if event.organizer.patronymic %} {{ event.organizer.patronymic }}{% endif %}
-    </p>
-
-```
-<img src="{{ url_for('static', filename='uploads/' ~ event.image_filename) }}"
-     alt="{{ event.name }}" class="img-fluid mb-3">
-
-<div>{{ event.description|safe }}</div>
-
-<h3 class="mt-4">Зарегистрированные волонтёры</h3>
-<ul>
-  {% for reg in event.registrations if reg.status == 'accepted' %}
-    <li>
-      {{ reg.volunteer.last_name }} {{ reg.volunteer.first_name }}{% if reg.volunteer.patronymic %} {{ reg.volunteer.patronymic }}{% endif %}
-      &mdash; {{ reg.contact_info }} ({{ reg.registered_at.strftime('%Y-%m-%d %H:%M') }})
-    </li>
-  {% else %}
-    <li>Нет подтверждённых регистраций.</li>
-  {% endfor %}
-</ul>
-
-{% if current_user.is_authenticated and current_user.role.name == 'moderator' %}
-  <h3 class="mt-4">Ожидающие заявки</h3>
-  <ul>
-    {% for reg in event.registrations if reg.status == 'pending' %}
-      <li>
-        {{ reg.volunteer.last_name }} {{ reg.volunteer.first_name }}{% if reg.volunteer.patronymic %} {{ reg.volunteer.patronymic }}{% endif %}
-        &mdash; {{ reg.contact_info }}
-        <a href="{{ url_for('main.accept_registration', reg_id=reg.id) }}">Принять</a>
-        <a href="{{ url_for('main.reject_registration', reg_id=reg.id) }}">Отклонить</a>
-      </li>
-    {% else %}
-      <li>Нет заявок на рассмотрение.</li>
-    {% endfor %}
-  </ul>
-{% endif %}
-
-{% if current_user.is_authenticated and current_user.role.name == 'user' and not event.registrations|selectattr('volunteer_id','equalto',current_user.id)|list %}
-  <form action="{{ url_for('main.register', event_id=event.id) }}" method="post" class="mt-4">
-    <div class="mb-3">
-      <label for="contact_info" class="form-label">Контактная информация</label>
-      <input type="text" name="contact_info" id="contact_info" class="form-control" required>
+<div class="container mt-4">
+  <div class="card mb-4">
+    <div class="row g-0">
+      <div class="col-md-4">
+        <img src="{{ url_for('static', filename='uploads/' ~ event.image_filename) }}" 
+             alt="{{ event.name }}" class="img-fluid rounded-start">
+      </div>
+      <div class="col-md-8">
+        <div class="card-body">
+          <h1 class="card-title">{{ event.name }}</h1>
+          
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <p class="card-text"><strong>Дата:</strong> {{ event.date.strftime('%d.%m.%Y') }}</p>
+              <p class="card-text"><strong>Место:</strong> {{ event.place }}</p>
+              <p class="card-text"><strong>Требуется волонтёров:</strong> {{ event.volunteers_required }}</p>
+              <p class="card-text"><strong>Зарегистрировано:</strong> {{ accepted_count }}</p>
+            </div>
+            <div class="col-md-6">
+              <p class="card-text"><strong>Организатор:</strong>
+                {{ event.organizer.last_name }} {{ event.organizer.first_name }}
+                {% if event.organizer.patronymic %} {{ event.organizer.patronymic }}{% endif %}
+              </p>
+              <p class="card-text"><strong>Статус:</strong>
+                {% if accepted_count >= event.volunteers_required %}
+                  <span class="badge bg-secondary">Регистрация закрыта</span>
+                {% else %}
+                  <span class="badge bg-success">Идёт набор</span>
+                {% endif %}
+              </p>
+            </div>
+          </div>
+          
+          <div class="card-text">{{ event.description|safe }}</div>
+        </div>
+      </div>
     </div>
-    <button type="submit" class="btn btn-primary">Зарегистрироваться</button>
-  </form>
-{% endif %}
-```
-
   </div>
+
+  <!-- Блок регистрации -->
+  <div class="card mb-4">
+    <div class="card-header">
+      <h3>Регистрация на мероприятие</h3>
+    </div>
+    <div class="card-body">
+      {% if current_user.is_authenticated %}
+        {% if user_registration %}
+          <div class="alert alert-info">
+            <h5>Ваша заявка</h5>
+            <p><strong>Статус:</strong> 
+              {% if user_registration.status == 'accepted' %}
+                <span class="text-success">Принята</span>
+              {% elif user_registration.status == 'pending' %}
+                <span class="text-warning">На рассмотрении</span>
+              {% else %}
+                <span class="text-danger">Отклонена</span>
+              {% endif %}
+            </p>
+            <p><strong>Контактная информация:</strong> {{ user_registration.contact_info }}</p>
+            <p><strong>Дата подачи:</strong> {{ user_registration.registration_date.strftime('%d.%m.%Y %H:%M') }}</p>
+          </div>
+        {% elif accepted_count < event.volunteers_required %}
+          <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#registrationModal">
+            Подать заявку
+          </button>
+        {% else %}
+          <div class="alert alert-warning">
+            Регистрация на это мероприятие закрыта, так как набрано необходимое количество волонтёров.
+          </div>
+        {% endif %}
+      {% else %}
+        <div class="alert alert-warning">
+          <p>Для регистрации на мероприятие необходимо войти в систему</p>
+          <a href="{{ url_for('auth.login', next=url_for('main.event_detail', event_id=event.id)) }}" 
+             class="btn btn-primary">
+            Войти для регистрации
+          </a>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Список зарегистрированных волонтёров -->
+  <div class="card mb-4">
+    <div class="card-header">
+      <h3>Зарегистрированные волонтёры ({{ accepted_count }})</h3>
+    </div>
+    <div class="card-body">
+      {% if accepted_registrations %}
+        <ul class="list-group">
+          {% for reg in accepted_registrations %}
+            <li class="list-group-item">
+              {{ reg.volunteer.last_name }} {{ reg.volunteer.first_name }}
+              {% if reg.volunteer.patronymic %} {{ reg.volunteer.patronymic }}{% endif %}
+              &mdash; {{ reg.contact_info }} 
+              <span class="text-muted small">({{ reg.registration_date.strftime('%d.%m.%Y %H:%M') }})</span>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <div class="alert alert-info">Нет подтверждённых регистраций</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Список на рассмотрении (для модераторов и администраторов) -->
+  {% if current_user.is_authenticated and current_user.role.name in ['moderator', 'admin'] and pending_registrations %}
+    <div class="card mb-4">
+      <div class="card-header bg-warning">
+        <h3>Заявки на рассмотрении ({{ pending_registrations|length }})</h3>
+      </div>
+      <div class="card-body">
+        <ul class="list-group">
+          {% for reg in pending_registrations %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <div>
+                {{ reg.volunteer.last_name }} {{ reg.volunteer.first_name }}
+                {% if reg.volunteer.patronymic %} {{ reg.volunteer.patronymic }}{% endif %}
+                &mdash; {{ reg.contact_info }}
+                <div class="text-muted small">{{ reg.registration_date.strftime('%d.%m.%Y %H:%M') }}</div>
+              </div>
+              <div>
+                <a href="{{ url_for('main.accept_registration', reg_id=reg.id) }}" 
+                   class="btn btn-sm btn-success">Принять</a>
+                <a href="{{ url_for('main.reject_registration', reg_id=reg.id) }}" 
+                   class="btn btn-sm btn-danger">Отклонить</a>
+              </div>
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  {% endif %}
+
+  <!-- Модальное окно регистрации -->
+  {% if current_user.is_authenticated and not user_registration and accepted_count < event.volunteers_required %}
+  <div class="modal fade" id="registrationModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Регистрация на мероприятие</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form method="POST" action="{{ url_for('main.register', event_id=event.id) }}">
+            <div class="mb-3">
+              <label class="form-label">Контактная информация</label>
+              <input type="text" name="contact_info" class="form-control" required
+                     placeholder="Телефон, email или другой способ связи">
+              <div class="form-text">Как с вами связаться для подтверждения участия</div>
+            </div>
+            <button type="submit" class="btn btn-primary">Отправить заявку</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
 {% endblock %}

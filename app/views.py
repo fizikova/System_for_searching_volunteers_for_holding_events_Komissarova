@@ -73,8 +73,9 @@ def create_event():
         db.session.commit()
         flash('Мероприятие успешно создано!', 'success')
         return redirect(url_for('main.event_detail', event_id=ev.id))
-
-    return render_template('event_form.html', form=form, event=None)
+    
+    # Для нового мероприятия accepted_count = 0
+    return render_template('event_form.html', form=form, event=None, accepted_count=0)
 
 @main_bp.route('/event/<int:event_id>/edit', methods=['GET', 'POST'])
 @login_required
@@ -108,8 +109,10 @@ def edit_event(event_id):
         db.session.commit()
         flash('Изменения сохранены!', 'success')
         return redirect(url_for('main.event_detail', event_id=ev.id))
-
-    return render_template('event_form.html', form=form, event=ev)
+    
+    # Вычисляем количество принятых заявок
+    accepted_count = get_accepted_count(ev)
+    return render_template('event_form.html', form=form, event=ev, accepted_count=accepted_count)
 
 @main_bp.route('/event/<int:event_id>/delete', methods=['POST'])
 @login_required
