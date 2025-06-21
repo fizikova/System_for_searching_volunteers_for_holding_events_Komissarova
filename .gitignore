@@ -18,3 +18,5 @@ config.py
 .idea/
 
 uploads/
+
+tmp/
