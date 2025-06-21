@@ -42,7 +42,7 @@
             </a>
           </li>
           
-          {% if current_user.is_authenticated and current_user.role.name in ['admin', 'moderator'] %}
+          {% if current_user.is_authenticated and current_user.role.name == 'admin' %}
           <li class="nav-item">
             <a class="nav-link {% if request.endpoint == 'main.create_event' %}active fw-bold{% endif %}" 
                href="{{ url_for('main.create_event') }}">

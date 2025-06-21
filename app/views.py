@@ -37,7 +37,7 @@ def index():
 @main_bp.route('/event/create', methods=['GET', 'POST'])
 @login_required
 def create_event():
-    if current_user.role.name not in ('admin', 'moderator'):
+    if current_user.role.name != 'admin':
         flash('У вас недостаточно прав для создания мероприятия', 'danger')
         return redirect(url_for('main.index'))
 
