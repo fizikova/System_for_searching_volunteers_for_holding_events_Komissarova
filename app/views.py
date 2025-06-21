@@ -1,106 +1,261 @@
-<!doctype html>
-<html lang="ru">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}Волонтеры{% endblock %}</title>
-  <!-- Bootstrap CSS -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-  <!-- EasyMDE только там, где нужно -->
-  {% block head_extra %}{% endblock %}
-</head>
-<body>
-  <nav class="navbar navbar-expand-lg navbar-light bg-light">
-    <div class="container">
-      <a class="navbar-brand" href="{{ url_for('main.index') }}">Система волонтёров</a>
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-        <span class="navbar-toggler-icon"></span>
-      </button>
-      <div class="collapse navbar-collapse" id="navbarNav">
-        <ul class="navbar-nav me-auto">
-          <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('main.index') }}">Главная</a>
-          </li>
-        </ul>
-        <ul class="navbar-nav">
-          {% if current_user.is_authenticated %}
-            <li class="nav-item">
-              <span class="navbar-text me-3">
-                {{ current_user.last_name }} {{ current_user.first_name }}
-                {% if current_user.patronymic %} {{ current_user.patronymic }}{% endif %}
-              </span>
-            </li>
-            <li class="nav-item">
-              <a class="btn btn-outline-danger" href="{{ url_for('auth.logout') }}">Выйти</a>
-            </li>
-          {% else %}
-            <li class="nav-item">
-              <a class="btn btn-primary" href="{{ url_for('auth.login') }}">Войти</a>
-            </li>
-          {% endif %}
-        </ul>
-      </div>
-    </div>
-  </nav>
+from flask import Blueprint, render_template, redirect, url_for, flash, request, abort, current_app
+from flask_login import login_user, logout_user, login_required, current_user
+from sqlalchemy import func
+from werkzeug.utils import secure_filename
+import os
+import bleach
 
-  <div class="container mt-4 mb-5">
-    <!-- Flash сообщения -->
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        {% for category, message in messages %}
-          <div class="alert alert-{{ category }} alert-dismissible fade show">
-            {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-          </div>
-        {% endfor %}
-      {% endif %}
-    {% endwith %}
+from app import db
+from app.models import Event, User, Registration, Role
+from app.forms import LoginForm, EventForm
+from werkzeug.security import check_password_hash
 
-    <!-- Основное содержимое -->
-    {% block content %}{% endblock %}
-  </div>
+# Разрешенные теги для Markdown
+ALLOWED_TAGS = bleach.sanitizer.ALLOWED_TAGS.union(
+    {'p', 'pre', 'h1', 'h2', 'h3', 'ul', 'ol', 'li', 'strong', 'em', 'a'}
+)
 
-  <footer class="bg-light py-4 mt-auto">
-    <div class="container text-center">
-      <p class="mb-0">Комиссарова Алена Сергеевна 231-3213</p>
-    </div>
-  </footer>
+main_bp = Blueprint('main', __name__)
 
-  <!-- Bootstrap JS -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  
-  <!-- EasyMDE только при необходимости -->
-  {% block scripts %}
-    {% if request.endpoint in ['main.create_event', 'main.edit_event'] %}
-      <script src="{{ url_for('static', filename='js/easymde.min.js') }}"></script>
-      <script>
-        const easyMDE = new EasyMDE({
-          element: document.getElementById('description'),
-          spellChecker: false,
-          autosave: {
-            enabled: false
-          },
-          toolbar: ["bold", "italic", "heading", "|", 
-                   "quote", "unordered-list", "ordered-list", "|",
-                   "link", "image", "|", "preview"]
-        });
-      </script>
-    {% endif %}
-  {% endblock %}
+def get_accepted_count(event):
+    """Подсчет принятых волонтеров для мероприятия"""
+    return Registration.query.filter_by(event_id=event.id, status='accepted').count()
 
-  <!-- Дополнительные скрипты -->
-  <script>
-    // Автоматическое скрытие alert через 5 секунд
-    document.addEventListener('DOMContentLoaded', function() {
-      setTimeout(() => {
-        const alerts = document.querySelectorAll('.alert');
-        alerts.forEach(alert => {
-          new bootstrap.Alert(alert).close();
-        });
-      }, 5000);
-    });
-  </script>
-</body>
-</html>
+@main_bp.route('/')
+def index():
+    page = request.args.get('page', 1, type=int)
+    pagination = Event.query \
+        .filter(Event.date >= func.current_date()) \
+        .order_by(Event.date.desc()) \
+        .paginate(page=page, per_page=10, error_out=False)
+    events = pagination.items
+    return render_template('index.html',
+                           events=events,
+                           pagination=pagination,
+                           get_accepted_count=get_accepted_count)
+
+@main_bp.route('/event/create', methods=['GET', 'POST'])
+@login_required
+def create_event():
+    if current_user.role.name not in ('admin', 'moderator'):
+        flash('У вас недостаточно прав для создания мероприятия', 'danger')
+        return redirect(url_for('main.index'))
+
+    form = EventForm()
+    if form.validate_on_submit():
+        # 1) Убедимся, что папка uploads существует
+        upload_folder = os.path.join(current_app.root_path, 'static', 'uploads')
+        os.makedirs(upload_folder, exist_ok=True)
+
+        # 2) Сохраняем файл
+        filename = secure_filename(form.image.data.filename)
+        filepath = os.path.join(upload_folder, filename)
+        form.image.data.save(filepath)
+
+        # 3) Санитизируем описание
+        desc_html = bleach.clean(
+            form.description.data,
+            tags=ALLOWED_TAGS,
+            strip=True
+        )
+
+        # 4) Создаём запись в БД
+        ev = Event(
+            name=form.name.data,
+            description=desc_html,
+            date=form.date.data,
+            place=form.place.data,
+            volunteers_required=form.volunteers_required.data,
+            image_filename=filename,
+            organizer_id=current_user.id
+        )
+        db.session.add(ev)
+        db.session.commit()
+        flash('Мероприятие успешно создано!', 'success')
+        return redirect(url_for('main.event_detail', event_id=ev.id))
+    
+    # Для нового мероприятия accepted_count = 0
+    return render_template('event_form.html', form=form, event=None, accepted_count=0)
+
+@main_bp.route('/event/<int:event_id>/edit', methods=['GET', 'POST'])
+@login_required
+def edit_event(event_id):
+    ev = Event.query.get_or_404(event_id)
+    if current_user.role.name not in ('admin', 'moderator'):
+        flash('У вас недостаточно прав для редактирования', 'danger')
+        return redirect(url_for('main.index'))
+
+    # Используем основную форму, но изменяем валидацию изображения
+    form = EventForm(obj=ev)
+    # Для редактирования изображение необязательно, иначе валидация требует файл
+    form.image.validators = []  # Убираем обязательную загрузку
+
+    if form.validate_on_submit():
+        # Если загружено новое изображение
+        if form.image.data:
+            # Сохраняем новое изображение
+            upload_folder = os.path.join(current_app.root_path, 'static', 'uploads')
+            filename = secure_filename(form.image.data.filename)
+            filepath = os.path.join(upload_folder, filename)
+            form.image.data.save(filepath)
+            ev.image_filename = filename
+
+        # Обновляем остальные поля
+        ev.name = form.name.data
+        ev.description = bleach.clean(form.description.data, tags=ALLOWED_TAGS, strip=True)
+        ev.date = form.date.data
+        ev.place = form.place.data
+        ev.volunteers_required = form.volunteers_required.data
+        db.session.commit()
+        flash('Изменения сохранены!', 'success')
+        return redirect(url_for('main.event_detail', event_id=ev.id))
+    
+    # Вычисляем количество принятых заявок
+    accepted_count = get_accepted_count(ev)
+    return render_template('event_form.html', form=form, event=ev, accepted_count=accepted_count)
+
+@main_bp.route('/event/<int:event_id>/delete', methods=['POST'])
+@login_required
+def delete_event(event_id):
+    ev = Event.query.get_or_404(event_id)
+    if current_user.role.name != 'admin':
+        abort(403)
+    db.session.delete(ev)
+    db.session.commit()
+    flash('Мероприятие удалено', 'success')
+    return redirect(url_for('main.index'))
+
+@main_bp.route('/event/<int:event_id>')
+def event_detail(event_id):
+    ev = Event.query.get_or_404(event_id)
+    
+    # Получаем заявку текущего пользователя (если он авторизован)
+    user_registration = None
+    if current_user.is_authenticated:
+        user_registration = Registration.query.filter_by(
+            event_id=event_id, 
+            volunteer_id=current_user.id
+        ).first()
+    
+    # Получаем списки заявок по статусам
+    accepted_registrations = Registration.query.filter_by(
+        event_id=event_id, status='accepted'
+    ).all()
+    pending_registrations = Registration.query.filter_by(
+        event_id=event_id, status='pending'
+    ).all()
+    
+    accepted_count = len(accepted_registrations)
+    
+    return render_template('event_detail.html', 
+                           event=ev,
+                           accepted_registrations=accepted_registrations,
+                           pending_registrations=pending_registrations,
+                           accepted_count=accepted_count,
+                           user_registration=user_registration)
+
+@main_bp.route('/event/<int:event_id>/register', methods=['POST'])
+@login_required
+def register(event_id):
+    ev = Event.query.get_or_404(event_id)
+    
+    # Проверяем, не зарегистрирован ли уже пользователь
+    existing_reg = Registration.query.filter_by(
+        event_id=event_id, 
+        volunteer_id=current_user.id
+    ).first()
+    
+    if existing_reg:
+        flash('Вы уже подали заявку на это мероприятие', 'warning')
+        return redirect(url_for('main.event_detail', event_id=event_id))
+    
+    # Проверяем, есть ли еще свободные места
+    accepted_count = Registration.query.filter_by(event_id=event_id, status='accepted').count()
+    if accepted_count >= ev.volunteers_required:
+        flash('На это мероприятие уже набрано достаточное количество волонтёров', 'danger')
+        return redirect(url_for('main.event_detail', event_id=event_id))
+    
+    contact = request.form.get('contact_info', '').strip()
+    if not contact:
+        flash('Укажите контактную информацию', 'danger')
+        return redirect(url_for('main.event_detail', event_id=event_id))
+    
+    # Создаем заявку
+    reg = Registration(
+        event_id=ev.id,
+        volunteer_id=current_user.id,
+        contact_info=contact,
+        status='pending'  # по умолчанию
+    )
+    db.session.add(reg)
+    db.session.commit()
+    flash('Ваша заявка отправлена на модерацию', 'success')
+    return redirect(url_for('main.event_detail', event_id=event_id))
+
+@main_bp.route('/registration/<int:reg_id>/accept')
+@login_required
+def accept_registration(reg_id):
+    reg = Registration.query.get_or_404(reg_id)
+    if current_user.role.name not in ('admin', 'moderator'):
+        abort(403)
+    
+    # Проверяем, не превысит ли это количество волонтеров
+    event = reg.event
+    accepted_count = Registration.query.filter_by(event_id=event.id, status='accepted').count()
+    if accepted_count >= event.volunteers_required:
+        flash('Невозможно принять заявку: превышено количество волонтёров', 'danger')
+        return redirect(url_for('main.event_detail', event_id=event.id))
+    
+    reg.status = 'accepted'
+    db.session.commit()
+    
+    # Проверяем, не заполнилась ли квота
+    new_accepted_count = accepted_count + 1
+    if new_accepted_count >= event.volunteers_required:
+        # Отклоняем все оставшиеся заявки
+        Registration.query.filter_by(event_id=event.id, status='pending').update(
+            {'status': 'rejected'},
+            synchronize_session=False
+        )
+        db.session.commit()
+        flash('Квота волонтёров заполнена. Оставшиеся заявки отклонены.', 'info')
+    
+    flash('Заявка принята!', 'success')
+    return redirect(url_for('main.event_detail', event_id=event.id))
+
+@main_bp.route('/registration/<int:reg_id>/reject')
+@login_required
+def reject_registration(reg_id):
+    reg = Registration.query.get_or_404(reg_id)
+    if current_user.role.name not in ('admin', 'moderator'):
+        abort(403)
+    
+    reg.status = 'rejected'
+    db.session.commit()
+    flash('Заявка отклонена', 'info')
+    return redirect(url_for('main.event_detail', event_id=reg.event_id))
+
+# ---------------------
+# Аутентификация
+# ---------------------
+auth_bp = Blueprint('auth', __name__)
+
+@auth_bp.route('/login', methods=['GET', 'POST'])
+def login():
+    form = LoginForm()
+    if form.validate_on_submit():
+        user = User.query.filter_by(login=form.login.data).first()
+        if user and check_password_hash(user.password_hash, form.password.data):
+            login_user(user, remember=form.remember_me.data)
+            next_page = request.args.get('next') or url_for('main.index')
+            flash('Вы успешно вошли в систему', 'success')
+            return redirect(next_page)
+        flash('Неверный логин или пароль', 'danger')
+    return render_template('login.html', form=form)
+
+@auth_bp.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    flash('Вы вышли из системы', 'info')
+    return redirect(url_for('main.index'))

@@ -1,43 +1,83 @@
- <!doctype html>
-<html lang="ru">
+<!doctype html>
+<html lang="ru" data-bs-theme="light">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}Волонтеры{% endblock %}</title>
+  <title>{% block title %}Система для волонтёров{% endblock %}</title>
+  
+  <!-- Favicon -->
+  <link rel="icon" href="{{ url_for('static', filename='images/favicon.ico') }}" type="image/x-icon">
+  
   <!-- Bootstrap CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  
+  <!-- Bootstrap Icons -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+  
+  <!-- Пользовательские стили -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-  <!-- EasyMDE только там, где нужно -->
+  
+  <!-- Дополнительные ресурсы для конкретных страниц -->
   {% block head_extra %}{% endblock %}
 </head>
 <body>
-  <nav class="navbar navbar-expand-lg navbar-light bg-light">
+  <!-- Навигационная панель -->
+  <nav class="navbar navbar-expand-lg navbar-light bg-light shadow-sm">
     <div class="container">
-      <a class="navbar-brand" href="{{ url_for('main.index') }}">Система волонтёров</a>
+      <a class="navbar-brand d-flex align-items-center" href="{{ url_for('main.index') }}">
+        <i class="bi bi-people-fill me-2"></i>
+        <span>Система волонтёров</span>
+      </a>
+      
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
         <span class="navbar-toggler-icon"></span>
       </button>
+      
       <div class="collapse navbar-collapse" id="navbarNav">
         <ul class="navbar-nav me-auto">
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('main.index') }}">Главная</a>
+            <a class="nav-link {% if request.endpoint == 'main.index' %}active fw-bold{% endif %}" 
+               href="{{ url_for('main.index') }}">
+              <i class="bi bi-house-door me-1"></i>Главная
+            </a>
           </li>
+          
+          {% if current_user.is_authenticated and current_user.role.name in ['admin', 'moderator'] %}
+          <li class="nav-item">
+            <a class="nav-link {% if request.endpoint == 'main.create_event' %}active fw-bold{% endif %}" 
+               href="{{ url_for('main.create_event') }}">
+              <i class="bi bi-plus-circle me-1"></i>Добавить мероприятие
+            </a>
+          </li>
+          {% endif %}
         </ul>
+        
         <ul class="navbar-nav">
           {% if current_user.is_authenticated %}
-            <li class="nav-item">
-              <span class="navbar-text me-3">
-                {{ current_user.last_name }} {{ current_user.first_name }}
-                {% if current_user.patronymic %} {{ current_user.patronymic }}{% endif %}
-              </span>
-            </li>
-            <li class="nav-item">
-              <a class="btn btn-outline-danger" href="{{ url_for('auth.logout') }}">Выйти</a>
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" role="button" 
+                 data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-person-circle me-2"></i>
+                <span>
+                  {{ current_user.last_name }} {{ current_user.first_name }}
+                  {% if current_user.patronymic %} {{ current_user.patronymic }}{% endif %}
+                </span>
+              </a>
+              <ul class="dropdown-menu dropdown-menu-end">
+                <li><span class="dropdown-item-text small text-muted">
+                  Роль: {{ current_user.role.name }}
+                </span></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}">
+                  <i class="bi bi-box-arrow-right me-2"></i>Выйти
+                </a></li>
+              </ul>
             </li>
           {% else %}
             <li class="nav-item">
-              <a class="btn btn-primary" href="{{ url_for('auth.login') }}">Войти</a>
+              <a class="btn btn-primary" href="{{ url_for('auth.login') }}">
+                <i class="bi bi-box-arrow-in-right me-1"></i>Войти
+              </a>
             </li>
           {% endif %}
         </ul>
@@ -45,61 +85,88 @@
     </div>
   </nav>
 
-  <div class="container mt-4 mb-5">
+  <!-- Основное содержимое -->
+  <main class="container my-4">
     <!-- Flash сообщения -->
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
-        {% for category, message in messages %}
-          <div class="alert alert-{{ category }} alert-dismissible fade show">
-            {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-          </div>
-        {% endfor %}
+        <div class="flashes-container">
+          {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show">
+              {{ message }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Закрыть"></button>
+            </div>
+          {% endfor %}
+        </div>
       {% endif %}
     {% endwith %}
 
-    <!-- Основное содержимое -->
+    <!-- Контент страницы -->
     {% block content %}{% endblock %}
-  </div>
+  </main>
 
-  <footer class="bg-light py-4 mt-auto">
-    <div class="container text-center">
-      <p class="mb-0">Комиссарова Алена Сергеевна 231-3213</p>
+  <!-- Футер -->
+  <footer class="bg-light py-4 mt-5 border-top">
+    <div class="container">
+      <div class="row">
+        <div class="col-md-6 text-center text-md-start">
+          <h5>Система для поиска волонтёров</h5>
+          <p class="mb-0">Автоматизация процесса поиска и регистрации волонтёров для мероприятий</p>
+        </div>
+        <div class="col-md-6 mt-3 mt-md-0 text-center text-md-end">
+          <p class="mb-0">Комиссарова Алена Сергеевна</p>
+          <p class="mb-0">Группа: 231-3213</p>
+        </div>
+      </div>
     </div>
   </footer>
 
-  <!-- Bootstrap JS -->
+  <!-- Bootstrap JS с Popper -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   
-  <!-- EasyMDE только при необходимости -->
+  <!-- Блок скриптов -->
   {% block scripts %}
+    <!-- EasyMDE для страниц создания/редактирования мероприятий -->
     {% if request.endpoint in ['main.create_event', 'main.edit_event'] %}
       <script src="{{ url_for('static', filename='js/easymde.min.js') }}"></script>
       <script>
-        const easyMDE = new EasyMDE({
-          element: document.getElementById('description'),
-          spellChecker: false,
-          autosave: {
-            enabled: false
-          },
-          toolbar: ["bold", "italic", "heading", "|", 
-                   "quote", "unordered-list", "ordered-list", "|",
-                   "link", "image", "|", "preview"]
+        document.addEventListener('DOMContentLoaded', function() {
+          const descriptionElement = document.getElementById('description');
+          if (descriptionElement) {
+            const easyMDE = new EasyMDE({
+              element: descriptionElement,
+              spellChecker: false,
+              autosave: { enabled: false },
+              toolbar: [
+                "bold", "italic", "heading", "|",
+                "quote", "unordered-list", "ordered-list", "|",
+                "link", "image", "|", "preview"
+              ]
+            });
+          }
         });
       </script>
     {% endif %}
   {% endblock %}
 
-  <!-- Дополнительные скрипты -->
+  <!-- Общие скрипты -->
   <script>
-    // Автоматическое скрытие alert через 5 секунд
+    // Автоматическое скрытие уведомлений через 5 секунд
     document.addEventListener('DOMContentLoaded', function() {
+      // Скрытие алертов
       setTimeout(() => {
-        const alerts = document.querySelectorAll('.alert');
-        alerts.forEach(alert => {
+        document.querySelectorAll('.alert').forEach(alert => {
           new bootstrap.Alert(alert).close();
         });
       }, 5000);
+      
+      // Подсветка активных ссылок в навигации
+      const currentPath = "{{ request.path }}";
+      document.querySelectorAll('.nav-link').forEach(link => {
+        if (link.getAttribute('href') === currentPath) {
+          link.classList.add('active', 'fw-bold');
+        }
+      });
     });
   </script>
 </body>
