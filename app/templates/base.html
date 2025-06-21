@@ -10,10 +10,13 @@
   <nav>
     {% if current_user.is_authenticated %}
       {{ current_user.last_name }} {{ current_user.first_name }} |
-      <a href="{{ url_for('auth.logout') }}">Выйти</a>
-    {% else %}
-      <a href="{{ url_for('auth.login') }}">Войти</a>
-    {% endif %}
+    {% if current_user.is_authenticated %}
+      {{ current_user.last_name }} {{ current_user.first_name }}
+      {% if current_user.patronymic %} {{ current_user.patronymic }}{% endif %} |
+       <a href="{{ url_for('auth.logout') }}">Выйти</a>
+     {% else %}
+       <a href="{{ url_for('auth.login') }}">Войти</a>
+     {% endif %}
   </nav>
 
   <div class="container">

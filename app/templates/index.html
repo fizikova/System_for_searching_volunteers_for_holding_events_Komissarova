@@ -2,96 +2,104 @@
 
 {% block content %}
 
-<p><strong>DEBUG: ваша роль — {{ current_user.role.name if current_user.is_authenticated else 'неавторизован' }}</strong></p>
+  <div class="container mt-4">
+    {# DEBUG, убрать позже #}
+    <p><strong>DEBUG: ваша роль — {{ current_user.role.name if current_user.is_authenticated else 'неавторизован' }}</strong></p>
 
-<div class="container mt-4">
-  <h1 class="mb-3">Список мероприятий</h1>
+```
+<h1 class="mb-3">Список мероприятий</h1>
 
-  {% if current_user.is_authenticated and current_user.role.name == 'admin' %}
-    <a href="{{ url_for('main.create_event') }}" class="btn btn-primary mb-4">Добавить мероприятие</a>
-  {% endif %}
+{% if current_user.is_authenticated and current_user.role.name == 'admin' %}
+  <a href="{{ url_for('main.create_event') }}" class="btn btn-primary mb-4">Добавить мероприятие</a>
+{% endif %}
 
-  {% if events %}
-    <div class="list-group">
-      {% for event in events %}
-        <div class="list-group-item d-flex justify-content-between align-items-start">
-          <div>
-            <h5 class="mb-1">{{ event.name }}</h5>
-            <p class="mb-1"><strong>Дата:</strong> {{ event.date }} | <strong>Место:</strong> {{ event.place }} | <strong>Организатор:</strong> {{ event.organizer.last_name }} {{ event.organizer.first_name }}</p>
-            <p>
-              <strong>Волонтёры:</strong> {{ get_accepted_count(event) }}/{{ event.volunteers_required }}
-              {% if get_accepted_count(event) >= event.volunteers_required %}
-                <span class="badge bg-secondary ms-2">Регистрация закрыта</span>
-              {% else %}
-                <span class="badge bg-success ms-2">Идёт набор волонтёров</span>
-              {% endif %}
-            </p>
-          </div>
-          <div class="btn-group">
-            <a href="{{ url_for('main.event_detail', event_id=event.id) }}" class="btn btn-outline-info btn-sm">Просмотр</a>
-            {% if current_user.is_authenticated and current_user.role.name in ['admin','moderator'] %}
-              <a href="{{ url_for('main.edit_event', event_id=event.id) }}" class="btn btn-outline-warning btn-sm">Редактировать</a>
-            {% endif %}
-            {% if current_user.is_authenticated and current_user.role.name == 'admin' %}
-              <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteModal{{ event.id }}">Удалить</button>
-            {% endif %}
-          </div>
-        </div>
-
-        {% if current_user.is_authenticated and current_user.role.name == 'admin' %}
-          <!-- Удаление модальное окно -->
-          <div class="modal fade" id="deleteModal{{ event.id }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ event.id }}" aria-hidden="true">
-            <div class="modal-dialog">
-              <div class="modal-content">
-                <div class="modal-header">
-                  <h5 class="modal-title" id="deleteModalLabel{{ event.id }}">Удаление мероприятия</h5>
-                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
-                </div>
-                <div class="modal-body">
-                  Вы уверены, что хотите удалить мероприятие «{{ event.name }}»?
-                </div>
-                <div class="modal-footer">
-                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Нет</button>
-                  <a href="{{ url_for('main.delete_event', event_id=event.id) }}" class="btn btn-danger">Да</a>
-                </div>
-              </div>
-            </div>
-          </div>
+{% if events %}
+<div class="list-group">
+  {% for event in events %}
+    <div class="list-group-item d-flex justify-content-between align-items-start">
+      <div>
+        <h5 class="mb-1">{{ event.name }}</h5>
+        <p class="mb-1">
+          <strong>Дата:</strong> {{ event.date }} |
+          <strong>Место:</strong> {{ event.place }} |
+          <strong>Организатор:</strong>
+          {{ event.organizer.last_name }} {{ event.organizer.first_name }}{% if event.organizer.patronymic %} {{ event.organizer.patronymic }}{% endif %}
+        </p>
+        <p>
+          <strong>Волонтёры:</strong> {{ get_accepted_count(event) }}/{{ event.volunteers_required }}
+          {% if get_accepted_count(event) >= event.volunteers_required %}
+            <span class="badge bg-secondary ms-2">Регистрация закрыта</span>
+          {% else %}
+            <span class="badge bg-success ms-2">Идёт набор волонтёров</span>
+          {% endif %}
+        </p>
+      </div>
+      <div class="btn-group">
+        <a href="{{ url_for('main.event_detail', event_id=event.id) }}" class="btn btn-outline-info btn-sm">Просмотр</a>
+        {% if current_user.is_authenticated and current_user.role.name in ['admin','moderator'] %}
+          <a href="{{ url_for('main.edit_event', event_id=event.id) }}" class="btn btn-outline-warning btn-sm">Редактировать</a>
         {% endif %}
-      {% endfor %}
+        {% if current_user.is_authenticated and current_user.role.name == 'admin' %}
+          <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteModal{{ event.id }}">Удалить</button>
+        {% endif %}
+      </div>
     </div>
 
-    <!-- Пагинация -->
-    <nav aria-label="Page navigation" class="mt-4">
-      <ul class="pagination">
-        {% if pagination.has_prev %}
-          <li class="page-item"><a class="page-link" href="{{ url_for('main.index', page=pagination.prev_num) }}">Предыдущая</a></li>
-        {% else %}
-          <li class="page-item disabled"><span class="page-link">Предыдущая</span></li>
-        {% endif %}
-
-        {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
-          {% if p %}
-            {% if p == pagination.page %}
-              <li class="page-item active"><span class="page-link">{{ p }}</span></li>
-            {% else %}
-              <li class="page-item"><a class="page-link" href="{{ url_for('main.index', page=p) }}">{{ p }}</a></li>
-            {% endif %}
-          {% else %}
-            <li class="page-item disabled"><span class="page-link">…</span></li>
-          {% endif %}
-        {% endfor %}
-
-        {% if pagination.has_next %}
-          <li class="page-item"><a class="page-link" href="{{ url_for('main.index', page=pagination.next_num) }}">Следующая</a></li>
-        {% else %}
-          <li class="page-item disabled"><span class="page-link">Следующая</span></li>
-        {% endif %}
-      </ul>
-    </nav>
-
-  {% else %}
-    <p>Нет предстоящих мероприятий.</p>
-  {% endif %}
+    {% if current_user.is_authenticated and current_user.role.name == 'admin' %}
+      <!-- Удаление модальное окно -->
+      <div class="modal fade" id="deleteModal{{ event.id }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ event.id }}" aria-hidden="true">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="deleteModalLabel{{ event.id }}">Удаление мероприятия</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+            </div>
+            <div class="modal-body">
+              Вы уверены, что хотите удалить мероприятие «{{ event.name }}»?
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Нет</button>
+              <a href="{{ url_for('main.delete_event', event_id=event.id) }}" class="btn btn-danger">Да</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    {% endif %}
+  {% endfor %}
 </div>
+
+<!-- Пагинация -->
+<nav aria-label="Page navigation" class="mt-4">
+  <ul class="pagination">
+    {% if pagination.has_prev %}
+      <li class="page-item"><a class="page-link" href="{{ url_for('main.index', page=pagination.prev_num) }}">Предыдущая</a></li>
+    {% else %}
+      <li class="page-item disabled"><span class="page-link">Предыдущая</span></li>
+    {% endif %}
+
+    {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+      {% if p %}
+        {% if p == pagination.page %}
+          <li class="page-item active"><span class="page-link">{{ p }}</span></li>
+        {% else %}
+          <li class="page-item"><a class="page-link" href="{{ url_for('main.index', page=p) }}">{{ p }}</a></li>
+        {% endif %}
+      {% else %}
+        <li class="page-item disabled"><span class="page-link">…</span></li>
+      {% endif %}
+    {% endfor %}
+
+    {% if pagination.has_next %}
+      <li class="page-item"><a class="page-link" href="{{ url_for('main.index', page=pagination.next_num) }}">Следующая</a></li>
+    {% else %}
+      <li class="page-item disabled"><span class="page-link">Следующая</span></li>
+    {% endif %}
+  </ul>
+</nav>
+```
+
+{% else %} <p>Нет предстоящих мероприятий.</p>
+{% endif %}
+
+  </div>
 {% endblock %}
