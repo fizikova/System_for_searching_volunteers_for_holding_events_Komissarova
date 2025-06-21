@@ -8,7 +8,6 @@
 </head>
 <body>
   <nav>
-    <!-- логика: если current_user.is_authenticated – показывать ФИО и «Выйти», иначе – «Войти» -->
     {% if current_user.is_authenticated %}
       {{ current_user.last_name }} {{ current_user.first_name }} |
       <a href="{{ url_for('auth.logout') }}">Выйти</a>

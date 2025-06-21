@@ -10,6 +10,10 @@ migrate = Migrate()
 login = LoginManager()
 login.login_view = 'auth.login'
 
+login.login_message = 'Для выполнения данного действия необходимо пройти процедуру аутентификации'
+login.login_message_category = 'warning'
+
+
 
 @login.user_loader
 def load_user(user_id):
