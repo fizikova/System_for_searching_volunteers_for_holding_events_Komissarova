@@ -2,7 +2,7 @@
 
 {% block content %}
 <div class="container mt-4">
-  {# DEBUG: убрать после проверки #}
+  {# DEBUG: убрать позже #}
   <p><strong>DEBUG: ваша роль — {{ current_user.role.name if current_user.is_authenticated else 'неавторизован' }}</strong></p>
 
   <h1 class="mb-3">Список мероприятий</h1>
@@ -87,9 +87,7 @@
         {% if pagination.has_prev %}
           <li class="page-item">
             <a class="page-link"
-               href="{{ url_for('main.index', page=pagination.prev_num) }}">
-              Предыдущая
-            </a>
+               href="{{ url_for('main.index', page=pagination.prev_num) }}">Предыдущая</a>
           </li>
         {% else %}
           <li class="page-item disabled"><span class="page-link">Предыдущая</span></li>
