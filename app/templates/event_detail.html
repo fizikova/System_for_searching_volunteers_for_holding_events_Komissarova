@@ -60,7 +60,7 @@
               {% endif %}
             </p>
             <p><strong>Контактная информация:</strong> {{ user_registration.contact_info }}</p>
-            <p><strong>Дата подачи:</strong> {{ user_registration.registration_date.strftime('%d.%m.%Y %H:%M') }}</p>
+            <p><strong>Дата подачи:</strong> {{ user_registration.registered_at.strftime('%d.%m.%Y %H:%M') }}</p>
           </div>
         {% elif accepted_count < event.volunteers_required %}
           <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#registrationModal">
@@ -96,7 +96,7 @@
               {{ reg.volunteer.last_name }} {{ reg.volunteer.first_name }}
               {% if reg.volunteer.patronymic %} {{ reg.volunteer.patronymic }}{% endif %}
               &mdash; {{ reg.contact_info }} 
-              <span class="text-muted small">({{ reg.registration_date.strftime('%d.%m.%Y %H:%M') }})</span>
+              <span class="text-muted small">({{ reg.registered_at.strftime('%d.%m.%Y %H:%M') }})</span>
             </li>
           {% endfor %}
         </ul>
@@ -120,7 +120,7 @@
                 {{ reg.volunteer.last_name }} {{ reg.volunteer.first_name }}
                 {% if reg.volunteer.patronymic %} {{ reg.volunteer.patronymic }}{% endif %}
                 &mdash; {{ reg.contact_info }}
-                <div class="text-muted small">{{ reg.registration_date.strftime('%d.%m.%Y %H:%M') }}</div>
+                <div class="text-muted small">{{ reg.registered_at.strftime('%d.%m.%Y %H:%M') }}</div>
               </div>
               <div>
                 <a href="{{ url_for('main.accept_registration', reg_id=reg.id) }}" 
