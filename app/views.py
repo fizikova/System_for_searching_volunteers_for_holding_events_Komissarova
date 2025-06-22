@@ -158,6 +158,10 @@ def event_detail(event_id):
 @login_required
 def register(event_id):
     ev = Event.query.get_or_404(event_id)
+
+    if current_user.role.name == 'admin':
+        flash('Администраторы не могут регистрироваться на мероприятия', 'warning')
+        return redirect(url_for('main.event_detail', event_id=event_id))
     
     # Проверяем, не зарегистрирован ли уже пользователь
     existing_reg = Registration.query.filter_by(
