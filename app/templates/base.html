@@ -17,9 +17,10 @@
   <!-- Пользовательские стили -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 
-  {% if request.endpoint in ['create_event', 'edit_event'] %}
+  {% if request.endpoint in ['main.create_event', 'main.edit_event'] %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/easymde.min.css') }}">
   {% endif %}
+
 
   <!-- Дополнительные ресурсы для конкретных страниц -->
   {% block head_extra %}{% endblock %}
@@ -133,13 +134,11 @@
  <!-- Блок скриптов -->
 {% block scripts %}
   <!-- EasyMDE для страниц создания/редактирования мероприятий -->
-  {% if request.endpoint in ['create_event', 'edit_event'] %}
+  {% if request.endpoint in ['main.create_event', 'main.edit_event'] %}
     <script src="{{ url_for('static', filename='js/easymde.min.js') }}"></script>
     <script src="{{ url_for('static', filename='js/easymde-init.js') }}"></script>
   {% endif %}
 {% endblock %}
 
-<!-- Подключение общих скриптов -->
-<script src="{{ url_for('static', filename='js/common.js') }}"></script>
 </body>
 </html>
