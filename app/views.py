@@ -75,7 +75,7 @@ def create_event():
         flash('Мероприятие успешно создано!', 'success')
         return redirect(url_for('main.event_detail', event_id=ev.id))
     
-    return render_template('event_form.html', form=form, event=None)
+    return render_template('event_create.html', form=form)
 
 # Исправлено: main_bp вместо bp
 @main_bp.route('/event/<int:event_id>/edit', methods=['GET', 'POST'])
@@ -112,7 +112,7 @@ def edit_event(event_id):
         else:
             # Если нет ни нового, ни существующего
             flash('Требуется загрузить изображение', 'danger')
-            return render_template('event_form.html', form=form, event=event)
+            return render_template('event_edit.html', form=form, event=event)
         
         try:
             db.session.commit()
@@ -122,7 +122,7 @@ def edit_event(event_id):
             db.session.rollback()
             flash(f'Ошибка при сохранении: {str(e)}', 'danger')
     
-    return render_template('event_form.html', form=form, event=event)
+    return render_template('event_edit.html', form=form, event=event)
 
 @main_bp.route('/event/<int:event_id>/delete', methods=['POST'])
 @login_required
