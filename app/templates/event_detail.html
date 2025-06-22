@@ -63,76 +63,78 @@
   </div>
 
   <!-- Блок регистрации -->
-<div class="card mb-4">
-  <div class="card-header">
-    <h3>Регистрация на мероприятие</h3>
-  </div>
-  <div class="card-body">
-    {% if current_user.is_authenticated %}
-      {% if user_registration %}
-        <div class="alert alert-info alert-static">
-          <h5>Ваша заявка</h5>
-          <p><strong>Статус:</strong> 
-            {% if user_registration.status == 'accepted' %}
-              <span class="text-success">Принята</span>
-            {% elif user_registration.status == 'pending' %}
-              <span class="text-warning">На рассмотрении</span>
-            {% else %}
-              <span class="text-danger">Отклонена</span>
-            {% endif %}
-          </p>
-          <p><strong>Контактная информация:</strong> {{ user_registration.contact_info }}</p>
-          <p><strong>Дата подачи:</strong> {{ user_registration.registered_at.strftime('%d.%m.%Y %H:%M') }}</p>
-        </div>
-      {% elif accepted_count < event.volunteers_required %}
-        {% if current_user.role.name == 'user' %}
-          <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#registrationModal">
-            Подать заявку
-          </button>
-        {% else %}
+  <div class="card mb-4">
+    <div class="card-header">
+      <h3>Регистрация на мероприятие</h3>
+    </div>
+    <div class="card-body">
+      {% if current_user.is_authenticated %}
+        {% if user_registration %}
           <div class="alert alert-info alert-static">
-            Администраторы и модераторы не могут регистрироваться в качестве волонтёров
+            <h5>Ваша заявка</h5>
+            <p><strong>Статус:</strong> 
+              {% if user_registration.status == 'accepted' %}
+                <span class="text-success">Принята</span>
+              {% elif user_registration.status == 'pending' %}
+                <span class="text-warning">На рассмотрении</span>
+              {% else %}
+                <span class="text-danger">Отклонена</span>
+              {% endif %}
+            </p>
+            <p><strong>Контактная информация:</strong> {{ user_registration.contact_info }}</p>
+            <p><strong>Дата подачи:</strong> {{ user_registration.registered_at.strftime('%d.%m.%Y %H:%M') }}</p>
+          </div>
+        {% elif accepted_count < event.volunteers_required %}
+          {% if current_user.role.name == 'user' %}
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#registrationModal">
+              Подать заявку
+            </button>
+          {% else %}
+            <div class="alert alert-info alert-static">
+              Администраторы и модераторы не могут регистрироваться в качестве волонтёров
+            </div>
+          {% endif %}
+        {% else %}
+          <div class="alert alert-warning alert-static">
+            Регистрация на это мероприятие закрыта, так как набрано необходимое количество волонтёров.
           </div>
         {% endif %}
       {% else %}
         <div class="alert alert-warning alert-static">
-          Регистрация на это мероприятие закрыта, так как набрано необходимое количество волонтёров.
+          <p>Для регистрации на мероприятие необходимо войти в систему</p>
+          <a href="{{ url_for('auth.login', next=url_for('main.event_detail', event_id=event.id)) }}" 
+            class="btn btn-primary">
+            Войти для регистрации
+          </a>
         </div>
       {% endif %}
-    {% else %}
-      <div class="alert alert-warning alert-static">
-        <p>Для регистрации на мероприятие необходимо войти в систему</p>
-        <a href="{{ url_for('auth.login', next=url_for('main.event_detail', event_id=event.id)) }}" 
-          class="btn btn-primary">
-          Войти для регистрации
-        </a>
-      </div>
-    {% endif %}
+    </div>
   </div>
-</div>
 
-  <!-- Список зарегистрированных волонтёров -->
-  <div class="card mb-4">
-    <div class="card-header">
-      <h3>Зарегистрированные волонтёры ({{ accepted_count }})</h3>
+  <!-- Список зарегистрированных волонтёров (только для админов и модераторов) -->
+  {% if current_user.is_authenticated and current_user.role.name in ['admin', 'moderator'] %}
+    <div class="card mb-4">
+      <div class="card-header">
+        <h3>Зарегистрированные волонтёры ({{ accepted_count }})</h3>
+      </div>
+      <div class="card-body">
+        {% if accepted_registrations %}
+          <ul class="list-group">
+            {% for reg in accepted_registrations %}
+              <li class="list-group-item">
+                {{ reg.volunteer.last_name }} {{ reg.volunteer.first_name }}
+                {% if reg.volunteer.patronymic %} {{ reg.volunteer.patronymic }}{% endif %}
+                &mdash; {{ reg.contact_info }} 
+                <span class="text-muted small">({{ reg.registered_at.strftime('%d.%m.%Y %H:%M') }})</span>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <div class="alert alert-info alert-static">Нет подтверждённых регистраций</div>
+        {% endif %}
+      </div>
     </div>
-    <div class="card-body">
-      {% if accepted_registrations %}
-        <ul class="list-group">
-          {% for reg in accepted_registrations %}
-            <li class="list-group-item">
-              {{ reg.volunteer.last_name }} {{ reg.volunteer.first_name }}
-              {% if reg.volunteer.patronymic %} {{ reg.volunteer.patronymic }}{% endif %}
-              &mdash; {{ reg.contact_info }} 
-              <span class="text-muted small">({{ reg.registered_at.strftime('%d.%m.%Y %H:%M') }})</span>
-            </li>
-          {% endfor %}
-        </ul>
-      {% else %}
-        <div class="alert alert-info alert-static">Нет подтверждённых регистраций</div>
-      {% endif %}
-    </div>
-  </div>
+  {% endif %}
 
   <!-- Список на рассмотрении (для модераторов и администраторов) -->
   {% if current_user.is_authenticated and current_user.role.name in ['moderator', 'admin'] and pending_registrations %}
