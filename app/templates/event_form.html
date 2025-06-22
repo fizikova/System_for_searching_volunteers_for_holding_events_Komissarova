@@ -2,10 +2,12 @@
 
 {% block content %}
 <div class="container mt-4">
-  <h2>{% if event %}Редактирование мероприятия{% else %}Создание мероприятия{% endif %}</h2>
-  <form method="POST" enctype="multipart/form-data">
+  <h2>
+    {% if event %}Редактирование мероприятия{% else %}Создание мероприятия{% endif %}
+  </h2>
+  <form method="POST" enctype="multipart/form-data" novalidate>
     {{ form.hidden_tag() }}
-    
+
     <div class="row">
       <div class="col-md-6">
         <div class="form-group mb-3">
@@ -15,7 +17,7 @@
             <div class="text-danger">{{ form.name.errors[0] }}</div>
           {% endif %}
         </div>
-        
+
         <div class="form-group mb-3">
           <label for="date">{{ form.date.label }}</label>
           {{ form.date(class="form-control", id="date") }}
@@ -23,7 +25,7 @@
             <div class="text-danger">{{ form.date.errors[0] }}</div>
           {% endif %}
         </div>
-        
+
         <div class="form-group mb-3">
           <label for="place">{{ form.place.label }}</label>
           {{ form.place(class="form-control", id="place") }}
@@ -31,7 +33,7 @@
             <div class="text-danger">{{ form.place.errors[0] }}</div>
           {% endif %}
         </div>
-        
+
         <div class="form-group mb-3">
           <label for="volunteers_required">{{ form.volunteers_required.label }}</label>
           {{ form.volunteers_required(class="form-control", id="volunteers_required") }}
@@ -40,67 +42,72 @@
           {% endif %}
         </div>
       </div>
-      
+
       <div class="col-md-6">
         <div class="form-group mb-3">
           <label for="image">{{ form.image.label }}</label>
           {{ form.image(class="form-control", id="image", accept=".jpg,.jpeg,.png") }}
-          
+
           {% if event and event.image_filename %}
-            <!-- Скрытое поле для существующего изображения -->
             <input type="hidden" name="existing_image" value="{{ event.image_filename }}">
-            
             <div class="mt-2">
               <p>Текущее изображение:</p>
-              <img src="{{ url_for('static', filename='uploads/' + event.image_filename) }}" 
+              <img src="{{ url_for('static', filename='uploads/' + event.image_filename) }}"
                    alt="Current Image" class="img-thumbnail" style="max-width: 200px;">
             </div>
-            <div class="form-text">Оставьте поле пустым, чтобы сохранить текущее изображение</div>
+            <div class="form-text">
+              Оставьте поле пустым, чтобы сохранить текущее изображение
+            </div>
           {% else %}
             <div class="form-text">Загрузите изображение в формате JPG, JPEG или PNG</div>
           {% endif %}
-          
+
           {% if form.image.errors %}
             <div class="text-danger">{{ form.image.errors[0] }}</div>
           {% endif %}
         </div>
       </div>
     </div>
-    
+
     <div class="form-group mb-3">
       <label for="description">{{ form.description.label }}</label>
-      {{ form.description(class="form-control", id="description", rows=5) }}
+      {{ form.description(class="form-control", id="description", rows=5, required=False) }}
       {% if form.description.errors %}
         <div class="text-danger">{{ form.description.errors[0] }}</div>
       {% endif %}
     </div>
-    
+
     <button type="submit" class="btn btn-primary">Сохранить</button>
-    <a href="{% if event %}{{ url_for('main.event_detail', event_id=event.id) }}{% else %}{{ url_for('main.index') }}{% endif %}" 
+    <a href="{% if event %}{{ url_for('main.event_detail', event_id=event.id) }}{% else %}{{ url_for('main.index') }}{% endif %}"
        class="btn btn-secondary">Отмена</a>
   </form>
 </div>
 
-<!-- Скрипт для отображения имени выбранного файла -->
+<!-- EasyMDE for Markdown -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.css">
+<script src="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.js"></script>
 <script>
   document.addEventListener('DOMContentLoaded', function() {
+    new EasyMDE({
+      element: document.getElementById('description'),
+      spellChecker: false,
+      placeholder: "Напишите описание мероприятия...",
+      status: false
+    });
+
+    // Скрипт для отображения имени выбранного файла
     const fileInput = document.getElementById('image');
     const fileNameDisplay = document.createElement('span');
     fileNameDisplay.className = 'text-muted ms-2';
     fileNameDisplay.id = 'file-name';
-    
-    // Находим метку для файлового ввода и добавляем отображение имени файла
     const label = fileInput.previousElementSibling;
     if (label && label.tagName === 'LABEL') {
       label.appendChild(fileNameDisplay);
     }
-    
     fileInput.addEventListener('change', function(e) {
       const fileName = e.target.files[0]?.name || 'Файл не выбран';
       fileNameDisplay.textContent = fileName;
     });
-    
-    // Инициализация при загрузке
     fileNameDisplay.textContent = fileInput.files[0]?.name || 'Файл не выбран';
   });
 </script>
