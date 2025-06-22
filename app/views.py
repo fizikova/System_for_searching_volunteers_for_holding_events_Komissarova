@@ -43,39 +43,50 @@ def create_event():
         return redirect(url_for('main.index'))
 
     form = EventForm()
+
     if form.validate_on_submit():
-        # Убедимся, что папка uploads существует
-        upload_folder = os.path.join(current_app.root_path, 'static', 'uploads')
-        os.makedirs(upload_folder, exist_ok=True)
+        try:
+            # Убедимся, что папка uploads существует
+            upload_folder = os.path.join(current_app.root_path, 'static', 'uploads')
+            os.makedirs(upload_folder, exist_ok=True)
 
-        # Сохраняем файл
-        filename = secure_filename(form.image.data.filename)
-        filepath = os.path.join(upload_folder, filename)
-        form.image.data.save(filepath)
+            # Сохраняем файл
+            filename = secure_filename(form.image.data.filename)
+            filepath = os.path.join(upload_folder, filename)
+            form.image.data.save(filepath)
 
-        # Санитизируем описание
-        desc_html = bleach.clean(
-            form.description.data,
-            tags=ALLOWED_TAGS,
-            strip=True
-        )
+            # Санитизируем описание
+            desc_html = bleach.clean(
+                form.description.data,
+                tags=ALLOWED_TAGS,
+                strip=True
+            )
 
-        # Создаём запись в БД
-        ev = Event(
-            name=form.name.data,
-            description=desc_html,
-            date=form.date.data,
-            place=form.place.data,
-            volunteers_required=form.volunteers_required.data,
-            image_filename=filename,
-            organizer_id=current_user.id
-        )
-        db.session.add(ev)
-        db.session.commit()
-        flash('Мероприятие успешно создано!', 'success')
-        return redirect(url_for('main.event_detail', event_id=ev.id))
-    
+            # Создаём запись в БД
+            ev = Event(
+                name=form.name.data,
+                description=desc_html,
+                date=form.date.data,
+                place=form.place.data,
+                volunteers_required=form.volunteers_required.data,
+                image_filename=filename,
+                organizer_id=current_user.id
+            )
+            db.session.add(ev)
+            db.session.commit()
+
+            flash('Мероприятие успешно создано!', 'success')
+            return redirect(url_for('main.event_detail', event_id=ev.id))
+
+        except Exception as e:
+            db.session.rollback()
+            flash('При сохранении данных возникла ошибка. Проверьте корректность введённых данных.', 'danger')
+
+    elif request.method == 'POST':
+        flash('При сохранении данных возникла ошибка. Проверьте корректность введённых данных.', 'danger')
+
     return render_template('event_create.html', form=form)
+
 
 # Исправлено: main_bp вместо bp
 @main_bp.route('/event/<int:event_id>/edit', methods=['GET', 'POST'])
@@ -109,9 +120,13 @@ def edit_event(event_id):
             return redirect(url_for('main.event_detail', event_id=event.id))
         except Exception as e:
             db.session.rollback()
-            flash(f'Ошибка при сохранении: {str(e)}', 'danger')
+            flash('При сохранении данных возникла ошибка. Проверьте корректность введённых данных.', 'danger')
+    elif request.method == 'POST':
+        # Форма не прошла валидацию
+        flash('При сохранении данных возникла ошибка. Проверьте корректность введённых данных.', 'danger')
 
     return render_template('event_edit.html', form=form, event=event)
+
 
 @main_bp.route('/event/<int:event_id>/delete', methods=['POST'])
 @login_required
