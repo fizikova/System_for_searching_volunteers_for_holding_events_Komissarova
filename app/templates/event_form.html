@@ -3,7 +3,7 @@
 {% block content %}
 <div class="container mt-4">
   <h2>{% if event %}Редактирование мероприятия{% else %}Создание мероприятия{% endif %}</h2>
-  <form method="POST" enctype="multipart/form-data">
+  <form method="POST" enctype="multipart/form-data" id="event-form" novalidate>
     {{ form.hidden_tag() }}
     
     <div class="row">
@@ -47,9 +47,7 @@
           {{ form.image(class="form-control", id="image", accept=".jpg,.jpeg,.png") }}
           
           {% if event and event.image_filename %}
-            <!-- Скрытое поле для существующего изображения -->
             <input type="hidden" name="existing_image" value="{{ event.image_filename }}">
-            
             <div class="mt-2">
               <p>Текущее изображение:</p>
               <img src="{{ url_for('static', filename='uploads/' + event.image_filename) }}" 
@@ -69,10 +67,18 @@
     
     <div class="form-group mb-3">
       <label for="description">{{ form.description.label }}</label>
-      {{ form.description(class="form-control", id="description", rows=5) }}
-      {% if form.description.errors %}
-        <div class="text-danger">{{ form.description.errors[0] }}</div>
-      {% endif %}
+      
+      <!-- Контейнер для редактора Markdown -->
+      <div id="markdown-editor"></div>
+      
+      <!-- Скрытое поле для данных описания -->
+      {{ form.description(class="d-none", id="description-field") }}
+      
+      <div id="description-error" class="text-danger">
+        {% if form.description.errors %}
+          {{ form.description.errors[0] }}
+        {% endif %}
+      </div>
     </div>
     
     <button type="submit" class="btn btn-primary">Сохранить</button>
@@ -80,28 +86,11 @@
        class="btn btn-secondary">Отмена</a>
   </form>
 </div>
+{% endblock %}
 
-<!-- Скрипт для отображения имени выбранного файла -->
-<script>
-  document.addEventListener('DOMContentLoaded', function() {
-    const fileInput = document.getElementById('image');
-    const fileNameDisplay = document.createElement('span');
-    fileNameDisplay.className = 'text-muted ms-2';
-    fileNameDisplay.id = 'file-name';
-    
-    // Находим метку для файлового ввода и добавляем отображение имени файла
-    const label = fileInput.previousElementSibling;
-    if (label && label.tagName === 'LABEL') {
-      label.appendChild(fileNameDisplay);
-    }
-    
-    fileInput.addEventListener('change', function(e) {
-      const fileName = e.target.files[0]?.name || 'Файл не выбран';
-      fileNameDisplay.textContent = fileName;
-    });
-    
-    // Инициализация при загрузке
-    fileNameDisplay.textContent = fileInput.files[0]?.name || 'Файл не выбран';
-  });
-</script>
+{% block scripts %}
+{{ super() }}
+{% if request.endpoint in ['create_event', 'edit_event'] %}
+  <script src="{{ url_for('static', filename='js/event_form.js') }}"></script>
+{% endif %}
 {% endblock %}
