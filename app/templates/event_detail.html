@@ -34,7 +34,13 @@
             </div>
           </div>
           
-          <div class="card-text">{{ event.description|safe }}</div>
+          <div class="mt-4">
+            <h4>Описание мероприятия</h4>
+            <div class="markdown-body">
+              {{ html_description | safe }}
+            </div>
+          </div>
+
         </div>
       </div>
     </div>

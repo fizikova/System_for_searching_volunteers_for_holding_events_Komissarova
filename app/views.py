@@ -4,6 +4,7 @@ from sqlalchemy import func
 from werkzeug.utils import secure_filename
 import os
 import bleach
+import markdown
 
 from app import db
 from app.models import Event, User, Registration, Role
@@ -154,17 +155,23 @@ def event_detail(event_id):
         event_id=event_id, status='pending'
     ).all()
     
-    # Исправленный подсчёт через запрос к БД
+    # Подсчёт подтверждённых заявок
     accepted_count = Registration.query.filter_by(
         event_id=event_id, status='accepted'
     ).count()
-    
-    return render_template('event_detail.html', 
-                           event=ev,
-                           accepted_registrations=accepted_registrations,
-                           pending_registrations=pending_registrations,
-                           accepted_count=accepted_count,
-                           user_registration=user_registration)
+
+    # Преобразуем Markdown-описание в HTML
+    html_description = markdown.markdown(ev.description)
+
+    return render_template(
+        'event_detail.html', 
+        event=ev,
+        html_description=html_description,
+        accepted_registrations=accepted_registrations,
+        pending_registrations=pending_registrations,
+        accepted_count=accepted_count,
+        user_registration=user_registration
+    )
 
 @main_bp.route('/event/<int:event_id>/register', methods=['POST'])
 @login_required
