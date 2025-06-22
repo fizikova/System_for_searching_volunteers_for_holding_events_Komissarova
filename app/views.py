@@ -77,42 +77,45 @@ def create_event():
     # Для нового мероприятия accepted_count = 0
     return render_template('event_form.html', form=form, event=None, accepted_count=0)
 
-@main_bp.route('/event/<int:event_id>/edit', methods=['GET', 'POST'])
+@bp.route('/event/<int:event_id>/edit', methods=['GET', 'POST'])
 @login_required
 def edit_event(event_id):
-    ev = Event.query.get_or_404(event_id)
-    if current_user.role.name not in ('admin', 'moderator'):
-        flash('У вас недостаточно прав для редактирования', 'danger')
+    event = Event.query.get_or_404(event_id)
+    if current_user.role.name not in ['admin', 'moderator']:
+        flash('Недостаточно прав для редактирования', 'danger')
         return redirect(url_for('main.index'))
-
-    # Используем основную форму, но изменяем валидацию изображения
-    form = EventForm(obj=ev)
-    # Для редактирования изображение необязательно, иначе валидация требует файл
-    form.image.validators = []  # Убираем обязательную загрузку
-
-    if form.validate_on_submit():
-        # Если загружено новое изображение
-        if form.image.data:
-            # Сохраняем новое изображение
-            upload_folder = os.path.join(current_app.root_path, 'static', 'uploads')
-            filename = secure_filename(form.image.data.filename)
-            filepath = os.path.join(upload_folder, filename)
-            form.image.data.save(filepath)
-            ev.image_filename = filename
-
-        # Обновляем остальные поля
-        ev.name = form.name.data
-        ev.description = bleach.clean(form.description.data, tags=ALLOWED_TAGS, strip=True)
-        ev.date = form.date.data
-        ev.place = form.place.data
-        ev.volunteers_required = form.volunteers_required.data
-        db.session.commit()
-        flash('Изменения сохранены!', 'success')
-        return redirect(url_for('main.event_detail', event_id=ev.id))
     
-    # Вычисляем количество принятых заявок
-    accepted_count = get_accepted_count(ev)
-    return render_template('event_form.html', form=form, event=ev, accepted_count=accepted_count)
+    # Создаем форму с текущими данными мероприятия
+    form = EventForm(obj=event)
+    
+    if form.validate_on_submit():
+        # Обновляем данные из формы
+        form.populate_obj(event)
+        
+        # Обработка изображения
+        if form.image.data:
+            # Если загружено новое изображение
+            filename = secure_filename(form.image.data.filename)
+            file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
+            form.image.data.save(file_path)
+            event.image_filename = filename
+        elif 'existing_image' in request.form:
+            # Если не загружено новое, но есть существующее
+            event.image_filename = request.form['existing_image']
+        else:
+            # Если нет ни нового, ни существующего
+            flash('Требуется загрузить изображение', 'danger')
+            return render_template('event_form.html', form=form, event=event)
+        
+        try:
+            db.session.commit()
+            flash('Мероприятие успешно обновлено!', 'success')
+            return redirect(url_for('main.event_detail', event_id=event.id))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Ошибка при сохранении: {str(e)}', 'danger')
+    
+    return render_template('event_form.html', form=form, event=event)
 
 @main_bp.route('/event/<int:event_id>/delete', methods=['POST'])
 @login_required

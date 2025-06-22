@@ -17,8 +17,7 @@ class EventForm(FlaskForm):
     place = StringField('Место', validators=[DataRequired()])
     volunteers_required = IntegerField('Требуемое количество волонтёров',
                                        validators=[DataRequired(), NumberRange(min=1)])
-    image = FileField('Изображение', validators=[
-        FileAllowed(['jpg','jpeg','png','gif'], 'Только изображения!'),
-        FileRequired('Нужно выбрать файл изображения')
+    image = FileField('Изображение мероприятия', validators=[
+        FileAllowed(['jpg', 'png', 'jpeg'], 'Только изображения!')
     ])
     submit = SubmitField('Сохранить')
