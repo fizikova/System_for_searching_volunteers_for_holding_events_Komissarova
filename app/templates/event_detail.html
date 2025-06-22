@@ -79,13 +79,13 @@
           <p><strong>Дата подачи:</strong> {{ user_registration.registered_at.strftime('%d.%m.%Y %H:%M') }}</p>
         </div>
       {% elif accepted_count < event.volunteers_required %}
-        {% if current_user.role.name != 'admin' %}
+        {% if current_user.role.name == 'user' %}
           <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#registrationModal">
             Подать заявку
           </button>
         {% else %}
           <div class="alert alert-info">
-            Администраторы не могут регистрироваться в качестве волонтёров
+            Администраторы и модераторы не могут регистрироваться в качестве волонтёров
           </div>
         {% endif %}
       {% else %}
