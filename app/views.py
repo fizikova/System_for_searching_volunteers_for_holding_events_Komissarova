@@ -27,7 +27,7 @@ def index():
     page = request.args.get('page', 1, type=int)
     pagination = Event.query \
         .filter(Event.date >= func.current_date()) \
-        .order_by(Event.date.desc()) \
+        .order_by(Event.date.asc()) \
         .paginate(page=page, per_page=10, error_out=False)
     events = pagination.items
     return render_template('index.html',
