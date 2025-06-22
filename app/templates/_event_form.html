@@ -43,7 +43,7 @@
           <label for="image">{{ form.image.label }}</label>
           {{ form.image(class="form-control", id="image", accept=".jpg,.jpeg,.png") }}
           
-          {% if event and event.image_filename %}
+          {% if getattr(event, 'image_filename', None) %}
             <input type="hidden" name="existing_image" value="{{ event.image_filename }}">
             <div class="mt-2">
               <p>Текущее изображение:</p>

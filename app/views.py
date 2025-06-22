@@ -82,38 +82,27 @@ def create_event():
 @login_required
 def edit_event(event_id):
     event = Event.query.get_or_404(event_id)
+
     if current_user.role.name not in ['admin', 'moderator']:
         flash('Недостаточно прав для редактирования', 'danger')
         return redirect(url_for('main.index'))
-    
+
     form = EventForm(obj=event)
+
     if form.validate_on_submit():
-        # Обновляем данные из формы
-        form.populate_obj(event)
-        
+        # Обновляем данные из формы, кроме изображения
+        event.name = form.name.data
+        event.date = form.date.data
+        event.place = form.place.data
+        event.volunteers_required = form.volunteers_required.data
+
         # Санитизируем описание
         event.description = bleach.clean(
             form.description.data,
             tags=ALLOWED_TAGS,
             strip=True
         )
-        
-        # Обработка изображения
-        upload_folder = os.path.join(current_app.root_path, 'static', 'uploads')
-        if form.image.data:
-            # Если загружено новое изображение
-            filename = secure_filename(form.image.data.filename)
-            file_path = os.path.join(upload_folder, filename)
-            form.image.data.save(file_path)
-            event.image_filename = filename
-        elif 'existing_image' in request.form:
-            # Если не загружено новое, но есть существующее
-            event.image_filename = request.form['existing_image']
-        else:
-            # Если нет ни нового, ни существующего
-            flash('Требуется загрузить изображение', 'danger')
-            return render_template('event_edit.html', form=form, event=event)
-        
+
         try:
             db.session.commit()
             flash('Мероприятие успешно обновлено!', 'success')
@@ -121,7 +110,7 @@ def edit_event(event_id):
         except Exception as e:
             db.session.rollback()
             flash(f'Ошибка при сохранении: {str(e)}', 'danger')
-    
+
     return render_template('event_edit.html', form=form, event=event)
 
 @main_bp.route('/event/<int:event_id>/delete', methods=['POST'])
