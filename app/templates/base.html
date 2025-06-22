@@ -17,6 +17,38 @@
   <!-- Пользовательские стили -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
   
+  <style>
+    /* Фиксированное место для сообщений */
+    .messages-container {
+      position: relative;
+      height: 70px; /* Фиксированная высота для резервирования места */
+      overflow: hidden;
+      z-index: 1000;
+    }
+    
+    .alert-fixed {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%) translateY(-100%);
+      width: 100%;
+      max-width: 800px;
+      opacity: 0;
+      transition: all 0.3s ease;
+      z-index: 1050;
+    }
+    
+    .alert-fixed.show {
+      transform: translateX(-50%) translateY(10px);
+      opacity: 1;
+    }
+    
+    /* Добавляем отступ для основного контента */
+    main {
+      padding-top: 20px;
+    }
+  </style>
+  
   <!-- Дополнительные ресурсы для конкретных страниц -->
   {% block head_extra %}{% endblock %}
 </head>
@@ -85,22 +117,22 @@
     </div>
   </nav>
 
-  <!-- Основное содержимое -->
-  <main class="container my-4">
-    <!-- Flash сообщения -->
+  <!-- Контейнер для сообщений с фиксированным местом -->
+  <div class="messages-container">
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
-        <div class="flashes-container">
-          {% for category, message in messages %}
-            <div class="alert alert-{{ category }} alert-dismissible fade show">
-              {{ message }}
-              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Закрыть"></button>
-            </div>
-          {% endfor %}
-        </div>
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade alert-fixed" role="alert" id="flash-{{ loop.index }}">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Закрыть"></button>
+          </div>
+        {% endfor %}
       {% endif %}
     {% endwith %}
+  </div>
 
+  <!-- Основное содержимое -->
+  <main class="container my-4">
     <!-- Контент страницы -->
     {% block content %}{% endblock %}
   </main>
@@ -151,14 +183,32 @@
 
   <!-- Общие скрипты -->
   <script>
-    // Автоматическое скрытие уведомлений через 5 секунд
     document.addEventListener('DOMContentLoaded', function() {
-      // Скрытие алертов
-      setTimeout(() => {
-        document.querySelectorAll('.alert').forEach(alert => {
-          new bootstrap.Alert(alert).close();
+      // Показываем сообщения с анимацией
+      document.querySelectorAll('.alert-fixed').forEach(function(alert) {
+        setTimeout(function() {
+          alert.classList.add('show');
+        }, 100);
+        
+        // Автоскрытие через 5 секунд
+        setTimeout(function() {
+          alert.classList.remove('show');
+          setTimeout(function() {
+            alert.style.display = 'none';
+          }, 300);
+        }, 5000);
+      });
+      
+      // Ручное закрытие сообщений
+      document.querySelectorAll('.alert .btn-close').forEach(function(button) {
+        button.addEventListener('click', function() {
+          const alert = this.closest('.alert');
+          alert.classList.remove('show');
+          setTimeout(function() {
+            alert.style.display = 'none';
+          }, 300);
         });
-      }, 5000);
+      });
       
       // Подсветка активных ссылок в навигации
       const currentPath = "{{ request.path }}";
