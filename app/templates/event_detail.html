@@ -70,7 +70,7 @@
   <div class="card-body">
     {% if current_user.is_authenticated %}
       {% if user_registration %}
-        <div class="alert alert-info">
+        <div class="alert alert-info alert-static">
           <h5>Ваша заявка</h5>
           <p><strong>Статус:</strong> 
             {% if user_registration.status == 'accepted' %}
@@ -90,17 +90,17 @@
             Подать заявку
           </button>
         {% else %}
-          <div class="alert alert-info">
+          <div class="alert alert-info alert-static">
             Администраторы и модераторы не могут регистрироваться в качестве волонтёров
           </div>
         {% endif %}
       {% else %}
-        <div class="alert alert-warning">
+        <div class="alert alert-warning alert-static">
           Регистрация на это мероприятие закрыта, так как набрано необходимое количество волонтёров.
         </div>
       {% endif %}
     {% else %}
-      <div class="alert alert-warning">
+      <div class="alert alert-warning alert-static">
         <p>Для регистрации на мероприятие необходимо войти в систему</p>
         <a href="{{ url_for('auth.login', next=url_for('main.event_detail', event_id=event.id)) }}" 
           class="btn btn-primary">
@@ -129,7 +129,7 @@
           {% endfor %}
         </ul>
       {% else %}
-        <div class="alert alert-info">Нет подтверждённых регистраций</div>
+        <div class="alert alert-info alert-static">Нет подтверждённых регистраций</div>
       {% endif %}
     </div>
   </div>
