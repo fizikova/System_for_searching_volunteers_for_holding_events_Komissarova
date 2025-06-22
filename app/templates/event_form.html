@@ -69,7 +69,7 @@
     
     <div class="form-group mb-3">
       <label for="description">{{ form.description.label }}</label>
-      {{ form.description(class="form-control", id="description", rows=5) }}
+      {{ form.description(class="form-control", id="description", rows=5, required=false) }}
       {% if form.description.errors %}
         <div class="text-danger">{{ form.description.errors[0] }}</div>
       {% endif %}

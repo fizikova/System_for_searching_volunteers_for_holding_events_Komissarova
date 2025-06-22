@@ -12,7 +12,7 @@ class LoginForm(FlaskForm):
 
 class EventForm(FlaskForm):
     name = StringField('Название', validators=[DataRequired()])
-    description = TextAreaField('Описание (Markdown)', validators=[DataRequired()])
+    description = TextAreaField('Описание (Markdown)')
     date = DateField('Дата', format='%Y-%m-%d', validators=[DataRequired()])
     place = StringField('Место', validators=[DataRequired()])
     volunteers_required = IntegerField('Требуемое количество волонтёров',
