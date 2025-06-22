@@ -16,7 +16,11 @@
   
   <!-- Пользовательские стили -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-  
+
+  {% if request.endpoint in ['create_event', 'edit_event'] %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/easymde.min.css') }}">
+  {% endif %}
+
   <!-- Дополнительные ресурсы для конкретных страниц -->
   {% block head_extra %}{% endblock %}
 </head>
@@ -124,50 +128,18 @@
   <!-- Bootstrap JS с Popper -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   
-  <!-- Блок скриптов -->
-  {% block scripts %}
-    <!-- EasyMDE для страниц создания/редактирования мероприятий -->
-    {% if request.endpoint in ['main.create_event', 'main.edit_event'] %}
-      <script src="{{ url_for('static', filename='js/easymde.min.js') }}"></script>
-      <script>
-        document.addEventListener('DOMContentLoaded', function() {
-          const descriptionElement = document.getElementById('description');
-          if (descriptionElement) {
-            const easyMDE = new EasyMDE({
-              element: descriptionElement,
-              spellChecker: false,
-              autosave: { enabled: false },
-              toolbar: [
-                "bold", "italic", "heading", "|",
-                "quote", "unordered-list", "ordered-list", "|",
-                "link", "image", "|", "preview"
-              ]
-            });
-          }
-        });
-      </script>
-    {% endif %}
-  {% endblock %}
+  <script src="{{ url_for('static', filename='js/common.js') }}"></script>
 
-  <!-- Общие скрипты -->
-  <script>
-    // Автоматическое скрытие уведомлений через 5 секунд
-    document.addEventListener('DOMContentLoaded', function() {
-      // Скрытие алертов
-      setTimeout(() => {
-        document.querySelectorAll('.alert').forEach(alert => {
-          new bootstrap.Alert(alert).close();
-        });
-      }, 5000);
-      
-      // Подсветка активных ссылок в навигации
-      const currentPath = "{{ request.path }}";
-      document.querySelectorAll('.nav-link').forEach(link => {
-        if (link.getAttribute('href') === currentPath) {
-          link.classList.add('active', 'fw-bold');
-        }
-      });
-    });
-  </script>
+ <!-- Блок скриптов -->
+{% block scripts %}
+  <!-- EasyMDE для страниц создания/редактирования мероприятий -->
+  {% if request.endpoint in ['create_event', 'edit_event'] %}
+    <script src="{{ url_for('static', filename='js/easymde.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/easymde-init.js') }}"></script>
+  {% endif %}
+{% endblock %}
+
+<!-- Подключение общих скриптов -->
+<script src="{{ url_for('static', filename='js/common.js') }}"></script>
 </body>
 </html>

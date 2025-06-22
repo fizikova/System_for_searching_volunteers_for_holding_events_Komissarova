@@ -1,0 +1,27 @@
+# Унифицированный стиль строк — LF (Linux)
+* text=auto eol=lf
+
+# Явно задаём LF для часто используемых файлов проекта
+*.py     text eol=lf
+*.html   text eol=lf
+*.css    text eol=lf
+*.js     text eol=lf
+*.json   text eol=lf
+*.md     text eol=lf
+*.yml    text eol=lf
+*.txt    text eol=lf
+
+# Бинарные файлы — не нормализовать
+*.jpg    binary
+*.jpeg   binary
+*.png    binary
+*.gif    binary
+*.svg    binary
+*.ico    binary
+*.pdf    binary
+*.woff   binary
+*.woff2  binary
+*.ttf    binary
+
+# Убеждаемся, что shell-скрипты (если будут) используют LF
+*.sh     text eol=lf
